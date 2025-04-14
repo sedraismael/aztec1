@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aztec Tribute System Simulation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap');
+
+        body {
+            font-family: 'EB Garamond', serif; /* Elegant and historical feel */
+            margin: 20px;
+            background-color: #f9f5f0; /* Light parchment color */
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1, h2 {
+            font-family: 'Cinzel', serif; /* More decorative, historical heading font */
+            color: #8b4513; /* Saddle brown */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            margin-top: 30px;
+        }
+
+        #initial-state h2 {
+            text-align: left;
+        }
+
+        .city-state {
+            background-color: #fff8e1; /* Light yellow, like aged paper */
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 3px 3px 7px #d3d3d3;
+            border: 1px solid #e0cba9;
+        }
+
+        .resources, .tribute {
+            margin-top: 10px;
+            padding-left: 20px;
+            list-style-type: disc;
+            color: #5e3a3a; /* Darker brown for lists */
+        }
+
+        .button-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            margin: 5px 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: #a0522d; /* Sienna */
+            color: white;
+            cursor: pointer;
+            font-family: 'EB Garamond', serif;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #8b4513; /* Saddle brown */
+        }
+
+        #output {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f5f5dc; /* Beige */
+            border-radius: 8px;
+            white-space: pre-wrap; /* Preserve line breaks */
+            border: 1px solid #e0cba9;
+            color: #333;
+            font-family: 'EB Garamond', serif;
+        }
+
+        .error {
+            color: #dc143c; /* Crimson */
+            font-weight: bold;
+        }
+
+        .warning {
+            color: #ff8c00; /* Dark orange */
+            font-style: italic;
+        }
+
+        #payment-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #5e3a3a;
+        }
+
+        #payment-section input[type="text"] {
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #d3d3d3;
+            border-radius: 4px;
+            width: 80%;
+            box-sizing: border-box;
+            font-family: 'EB Garamond', serif;
+            font-size: 1em;
+        }
+
+        #payment-section button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Aztec Tribute System Simulation</h1>
+
+    <div id="initial-state">
+        <h2>Initial State of the Triple Alliance:</h2>
+        <ul id="triple-alliance"></ul>
+    </div>
+
+    <div id="tribute-cycle">
+        <h2>Tribute Cycle</h2>
+        <div id="tribute-demands"></div>
+        <div id="payment-section"></div>
+    </div>
+
+    <div id="reports">
+        <h2>Reports</h2>
+        <div id="resource-reports"></div>
+        <div id="tribute-status-reports"></div>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="button-container">
+        <button onclick="nextCycle()">Next Cycle</button>
+        <button onclick="showResources()">Show Resources</button>
+        <button onclick="showTributeStatus()">Show Tribute Status</button>
+    </div>
+
+    <script>
+        let cityStates = [];
+        let tributeDemands = {};
+        let currentSubjectIndex = -1; // To track whose turn it is to pay
+
+        function initializeSimulation() {
+            // This data would ideally come from a server or a JSON file
+            cityStates = [
+                { name: "Tenochtitlan", resources: { maize: 150, beans: 70, squash: 100, cotton: 50, obsidian: 30, pottery: 40, feathers: 20 }, tribute_obligation: {}, tribute_paid: {} },
+                { name: "Texcoco", resources: { maize: 120, beans: 80, squash: 90, cotton: 60, obsidian: 25, pottery: 35, feathers: 15 }, tribute_obligation: {}, tribute_paid: {} },
+                { name: "Tlacopan (Alliance)", resources: { maize: 130, beans: 60, squash: 110, cotton: 45, obsidian: 35, pottery: 50, feathers: 18 }, tribute_obligation: {}, tribute_paid: {} },
+                { name: "Xochimilco", resources: { maize: 100, beans: 50, squash: 80, cotton: 30, obsidian: 20, pottery: 30, feathers: 10 }, tribute_obligation: {}, tribute_paid: {} },
+                { name: "Chalco", resources: { maize: 110, beans: 75, squash: 95, cotton: 35, obsidian: 22, pottery: 38, feathers: 12 }, tribute_obligation: {}, tribute_paid: {} },
+                { name: "Tlacopan (Subject)", resources: { maize: 90, beans: 40, squash: 70, cotton: 25, obsidian: 18, pottery: 28, feathers: 8 }, tribute_obligation: {}, tribute_paid: {} }
+            ];
+
+            const tripleAllianceList = document.getElementById('triple-alliance');
+            cityStates.slice(0, 3).forEach(state => {
+                const listItem = document.createElement('li');
+                listItem.textContent = state.name;
+                tripleAllianceList.appendChild(listItem);
+            });
+
+            document.getElementById('tribute-cycle').style.display = 'none';
+            document.getElementById('reports').style.display = 'none';
+        }
+
+        function generateTributeDemandsJS() {
+            tributeDemands = {};
+            const subjectStates = cityStates.slice(3);
+            const resources = ["maize", "beans", "cotton", "obsidian", "pottery", "feathers"];
+
+            subjectStates.forEach(state => {
+                const demands = {};
+                const numDemands = Math.floor(Math.random() * 3) + 1;
+                const sampledResources = getRandomSubset(resources, numDemands);
+                sampledResources.forEach(resource => {
+                    demands[resource] = Math.floor(Math.random() * 31) +
